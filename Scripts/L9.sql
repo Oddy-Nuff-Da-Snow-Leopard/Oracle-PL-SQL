@@ -1,0 +1,198 @@
+CONNECT AMECORE/orcl@//localhost:1521/AME_PDB as sysdba;
+
+--Task01
+
+--In sqlplus
+--sqlplus / as sysdba
+--create user c##AME identified by orcl;
+--connect ame_pdb_admin/orcl@//localhost:1521/AME_PDB as sysdba;
+--grant create session to c##AME;
+
+--grant create sequence to c##AME;
+
+--grant create table to c##AME;
+
+--alter user c##AME quota UNLIMITED on users;
+
+--grant create cluster to c##AME;
+
+--grant create synonym to c##AME;
+
+--grant create public synonym to c##AME;
+
+--grant drop public synonym to c##AME;
+
+--grant create view to c##AME;
+
+--grant create materialized view to c##AME;
+
+
+--Task02
+DROP SEQUENCE S1;
+CREATE SEQUENCE S1
+START WITH 1000
+INCREMENT BY 10
+NOMAXVALUE NOMINVALUE
+NOCYCLE NOCACHE NOORDER;
+
+SELECT S1.NEXTVAL FROM DUAL;
+SELECT S1.CURRVAL FROM DUAL;
+
+
+--Task03
+DROP SEQUENCE S2;
+CREATE SEQUENCE S2
+START WITH 10
+INCREMENT BY 10
+MAXVALUE 100 NOMINVALUE
+NOCYCLE NOCACHE NOORDER;
+
+SELECT S2.NEXTVAL FROM DUAL;
+SELECT S2.CURRVAL FROM DUAL;
+
+--Task04
+DROP SEQUENCE S3;
+CREATE SEQUENCE S3
+START WITH 10
+INCREMENT BY -10
+MAXVALUE 10
+MINVALUE -100
+NOCYCLE NOCACHE ORDER;
+
+SELECT S3.NEXTVAL FROM DUAL;
+SELECT S3.CURRVAL FROM DUAL;
+
+--Task05
+DROP SEQUENCE S4;
+CREATE SEQUENCE S4
+START WITH 1
+INCREMENT BY 1
+MAXVALUE 10
+NOMINVALUE
+CYCLE CACHE 5 NOORDER;
+
+SELECT S4.NEXTVAL FROM DUAL;
+
+--Task06
+SELECT * FROM SYS.USER_SEQUENCES;
+
+--Task07
+DROP TABLE T1;
+CREATE TABLE T1(
+N1 number(20),
+N2 number(20),
+N3 number(20),
+N4 number(20)
+) CACHE STORAGE (BUFFER_POOL KEEP);
+
+DECLARE i int := 0;
+BEGIN
+    WHILE i < 7 LOOP
+        INSERT INTO T1 VALUES (S1.NEXTVAL , S2.NEXTVAL , S3.NEXTVAL , S4.NEXTVAL );
+        i := i + 1;
+    END LOOP;
+END;
+
+SELECT * FROM T1;
+
+
+--Task08
+DROP CLUSTER ABC;
+CREATE CLUSTER ABC(
+X number(10),
+V varchar2(12)
+) HASHKEYS 200;
+
+--Task09
+DROP TABLE A;
+CREATE TABLE A(
+XA number(10),
+VA varchar2(12),
+YA number(10)
+) CLUSTER ABC(XA, VA);
+
+--Task10
+DROP TABLE B;
+CREATE TABLE B(
+XB number(10),
+VB varchar2(12),
+YB number(10)
+) CLUSTER ABC(XB, VB);
+
+--Task11
+DROP TABLE C;
+CREATE TABLE C(
+XC number(10),
+VC varchar2(12),
+YC number(10)
+) CLUSTER ABC(XC, VC);
+
+--Task12
+SELECT * FROM USER_TABLES;
+SELECT * FROM USER_CLUSTERS;
+
+--sqlplus as ame_pdb_admin (sysdba)
+--select * from dba_clusters where cluster_name = 'ABC';
+
+--Task13
+DROP SYNONYM MySynonym;
+CREATE SYNONYM MySynonym FOR T1;
+
+SELECT * FROM MySynonym;
+
+--Task14
+DROP PUBLIC SYNONYM MyPublicSynonym;
+CREATE PUBLIC SYNONYM MyPublicSynonym FOR T1;
+
+SELECT * FROM MyPublicSynonym;
+--same select in sqlplus as ame_pdb_admin (sysdba)
+
+--Task15
+DROP TABLE Groups;
+CREATE TABLE Groups(
+GROUP_ID int PRIMARY KEY,
+GROUP_NAME varchar(20) NOT NULL
+);
+
+INSERT INTO Groups VALUES(1, 'ISIT 3-1');
+INSERT INTO Groups VALUES(2, 'POIT 3-2');
+INSERT INTO Groups VALUES(3, 'ISIT 3-3');
+
+DROP TABLE Students;
+CREATE TABLE Students(
+STUDENT_ID int PRIMARY KEY,
+STUDENT_NAME varchar(20) NOT NULL,
+STUDENT_SURNAME varchar(25) NOT NULL,
+GROUP_ID int NOT NULL,
+CONSTRAINT STUDENTS_GROUP_ID_FK FOREIGN KEY(GROUP_ID) REFERENCES Groups(GROUP_ID)
+);
+
+INSERT INTO Students VALUES(1, 'Maksim', 'Alekseev', 2);
+INSERT INTO Students VALUES(2, 'Roman', 'Bovkynovich', 2);
+INSERT INTO Students VALUES(3, 'Alexey', 'Tsyabyk', 3);
+INSERT INTO Students VALUES(4, 'Dmitry', 'Yanyk', 3);
+
+SELECT * FROM Groups;
+SELECT * FROM Students;
+
+CREATE VIEW V1 AS
+    SELECT GROUP_NAME, STUDENT_NAME, STUDENT_SURNAME FROM 
+    Groups G INNER JOIN Students S
+    ON G.GROUP_ID = S.GROUP_ID;
+    
+SELECT * FROM V1;
+
+
+--Task16
+DROP MATERIALIZED VIEW MV;
+CREATE MATERIALIZED VIEW MV
+BUILD IMMEDIATE
+REFRESH COMPLETE ON DEMAND NEXT SYSDATE + numtodsinterval(30, 'second') AS
+SELECT * FROM T1;
+
+SELECT * FROM MV;
+
+INSERT INTO T1 VALUES (228, 228, 228, 228);
+COMMIT;
+
+SELECT * FROM MV;
